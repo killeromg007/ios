@@ -1,21 +1,28 @@
 name = "anonymous-messages"
 type = "webpack"
 account_id = ""  # Your Cloudflare account ID
-workers_dev = true
+workers_dev = false
 compatibility_date = "2023-12-22"
 compatibility_flags = ["nodejs_compat", "python_worker"]
 
 [build]
-command = "pip install -r requirements.txt && python build.py"
-output_dir = "build"
-watch_dir = "src"
+command = "pip install -r requirements.txt"
+output_dir = "/"
+
+[build.environment]
+PYTHON_VERSION = "3.9"
 
 [build.upload]
 format = "service-worker"
 
 [site]
-bucket = "./build"
+bucket = "/"
 entry-point = "workers-site"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "anonymous-messages"
+database_id = "11e35595-ee1b-481d-80f6-bc5334062e6e"
 
 [env.production]
 name = "anonymous-messages-prod"
@@ -27,3 +34,4 @@ name = "anonymous-messages-staging"
 
 [vars]
 FLASK_ENV = "production"
+DATABASE_URL = "postgresql://anonymous-messages_owner:pmK9yrPWa5wt@ep-still-shadow-a19fqc9l.ap-southeast-1.aws.neon.tech/anonymous-messages?sslmode=require"
