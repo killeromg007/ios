@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from auth import auth  # Import our new auth blueprint
+from auth import auth
 import os
 
 app = Flask(__name__)
@@ -18,4 +18,9 @@ login_manager.login_view = 'auth.login'
 app.register_blueprint(auth)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use environment variables for production settings
+    port = int(os.getenv('PORT', 8080))
+    host = os.getenv('HOST', '0.0.0.0')
+    debug = os.getenv('FLASK_DEBUG', 'False') == 'True'
+    
+    app.run(host=host, port=port, debug=debug)
