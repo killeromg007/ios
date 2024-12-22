@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
-    return await env.FLASK.fetch(request);
+  async fetch(request, env, ctx) {
+    return await env.PYTHON.fetch(request);
   }
 }

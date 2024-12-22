@@ -6,11 +6,17 @@ compatibility_date = "2023-12-22"
 compatibility_flags = ["nodejs_compat", "python_worker"]
 
 [build]
-command = "pip install -r requirements.txt && gunicorn app:app"
-build_output_directory = "/dist"
+command = "pip install -r requirements.txt"
 
 [build.environment]
 PYTHON_VERSION = "3.9"
+
+[[build.functions]]
+pattern = "/*"
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
+
+[functions]
+directory = "functions"
 
 [site]
 bucket = "/dist"
@@ -19,15 +25,6 @@ entry-point = "workers-site"
 [[build.functions]]
 path = "/worker.py"
 handler = "app"
-
-[functions]
-directory = "functions"
-main = "app.py"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "anonymous-messages"
-database_id = "11e35595-ee1b-481d-80f6-bc5334062e6e"
 
 [env.production]
 name = "anonymous-messages-prod"
@@ -40,3 +37,8 @@ name = "anonymous-messages-staging"
 [vars]
 FLASK_ENV = "production"
 DATABASE_URL = "postgresql://anonymous-messages_owner:pmK9yrPWa5wt@ep-still-shadow-a19fqc9l.ap-southeast-1.aws.neon.tech/anonymous-messages?sslmode=require"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "anonymous-messages"
+database_id = "11e35595-ee1b-481d-80f6-bc5334062e6e"
