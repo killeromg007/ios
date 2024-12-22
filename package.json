@@ -1,0 +1,16 @@
+{
+  "name": "anonymous-messages",
+  "version": "1.0.0",
+  "description": "Anonymous messaging system",
+  "main": "index.js",
+  "scripts": {
+    "build": "python build.py",
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "@cloudflare/kv-asset-handler": "^0.3.0"
+  },
+  "devDependencies": {
+    "wrangler": "^2.0.0"
+  }
+}

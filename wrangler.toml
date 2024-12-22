@@ -1,0 +1,29 @@
+name = "anonymous-messages"
+type = "webpack"
+account_id = ""  # Your Cloudflare account ID
+workers_dev = true
+compatibility_date = "2023-12-22"
+compatibility_flags = ["nodejs_compat", "python_worker"]
+
+[build]
+command = "pip install -r requirements.txt && python build.py"
+output_dir = "build"
+watch_dir = "src"
+
+[build.upload]
+format = "service-worker"
+
+[site]
+bucket = "./build"
+entry-point = "workers-site"
+
+[env.production]
+name = "anonymous-messages-prod"
+route = ""  # Your production domain
+zone_id = ""  # Your zone ID if using custom domain
+
+[env.staging]
+name = "anonymous-messages-staging"
+
+[vars]
+FLASK_ENV = "production"
