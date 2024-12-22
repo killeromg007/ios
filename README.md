@@ -6,7 +6,7 @@ A web application that allows users to send and receive anonymous messages.
 - User registration and authentication
 - Google OAuth login
 - Anonymous message boxes
-- Modern UI design
+- Modern UI designa
 
 ## Local Development
 1. Install dependencies:
