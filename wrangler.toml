@@ -6,7 +6,7 @@ compatibility_date = "2023-12-22"
 compatibility_flags = ["nodejs_compat", "python_worker"]
 
 [build]
-command = "pip install -r requirements.txt && python app.py"
+command = "pip install -r requirements.txt && gunicorn app:app"
 output_dir = "/"
 
 [build.environment]
