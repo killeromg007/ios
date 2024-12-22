@@ -1,18 +1,19 @@
 import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
+import { createPythonWorker } from '@cloudflare/workers-python'
+
+const pythonWorker = createPythonWorker()
 
 addEventListener('fetch', event => {
-  event.respondWith(handleEvent(event))
+  event.respondWith(handleRequest(event))
 })
 
-async function handleEvent(event) {
+async function handleRequest(event) {
   try {
-    let response = await getAssetFromKV(event)
+    // Try to serve static assets first
+    const response = await getAssetFromKV(event)
     return response
   } catch (e) {
-    let pathname = new URL(event.request.url).pathname
-    return new Response(`"${pathname}" not found`, {
-      status: 404,
-      statusText: 'not found',
-    })
+    // If not a static asset, pass to Flask application
+    return pythonWorker.fetch(event.request)
   }
 }

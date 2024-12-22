@@ -19,6 +19,10 @@ format = "service-worker"
 bucket = "/"
 entry-point = "workers-site"
 
+[[build.functions]]
+path = "/worker.py"
+handler = "app"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "anonymous-messages"
