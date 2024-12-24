@@ -324,5 +324,11 @@ def format_datetime(timestamp):
 
 app.jinja_env.filters['datetime'] = format_datetime
 
+port = int(os.getenv('PORT', 8080))
+host = os.getenv('HOST', '0.0.0.0')
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    if os.getenv('FLASK_DEBUG', 'False') == 'True':
+        app.run(debug=True)
+    else:
+        app.run(host=host, port=port)
