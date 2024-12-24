@@ -2,39 +2,60 @@
 
 {% block content %}
 <div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card fade-in">
                 <div class="card-header">
-                    <h2 class="text-center mb-0">Send Anonymous Message</h2>
+                    <h2 class="mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Send {% if not current_user.is_authenticated %}Anonymous {% endif %}Message
+                    </h2>
                 </div>
                 <div class="card-body">
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-success alert-dismissible fade show">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                            <div class="text-center mb-3">
-                                <a href="{{ url_for('send_message', link_id=link_id) }}" class="btn btn-outline-primary">Send Another Message</a>
-                            </div>
-                        {% else %}
-                            <form method="POST">
-                                <div class="mb-3">
-                                    <label for="content" class="form-label">Your Message</label>
-                                    <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
-                                </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary">Send Message</button>
-                                </div>
-                            </form>
-                        {% endif %}
-                    {% endwith %}
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="recipient" class="form-label">Recipient</label>
+                            <select name="recipient" id="recipient" class="form-select" required>
+                                <option value="">Select a recipient</option>
+                                {% for user in users %}
+                                    {% if not current_user.is_authenticated or user.id != current_user.id %}
+                                        <option value="{{ user.username }}">{{ user.username }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Message</label>
+                            <textarea name="content" id="content" class="form-control" rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Send {% if not current_user.is_authenticated %}Anonymous {% endif %}Message
+                        </button>
+                    </form>
                 </div>
             </div>
+            {% if not current_user.is_authenticated %}
+                <div class="card mt-3 text-center fade-in">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Want to see messages sent to you?</p>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2">Login</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-primary">Register</a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
 {% endblock %}
