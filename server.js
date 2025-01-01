@@ -220,17 +220,24 @@ app.get('/message_box', isAuthenticated, async (req, res) => {
 });
 
 app.get('/l/:link', async (req, res) => {
-    const users = await loadData(USERS_FILE);
-    const user = users.find(u => u.link === req.params.link);
-    
-    if (!user) {
-        req.flash('error', '無效的連結');
-        return res.redirect('/');
+    try {
+        const users = await loadData(USERS_FILE);
+        const user = users.find(u => u.link === req.params.link);
+        
+        if (!user) {
+            req.flash('error', '無效的連結');
+            return res.redirect('/');
+        }
+        
+        res.render('anonymous_message', { 
+            recipientName: user.username,
+            title: `傳送訊息給 ${user.username}`
+        });
+    } catch (err) {
+        console.error('Error loading user:', err);
+        req.flash('error', '載入使用者資料失敗');
+        res.redirect('/');
     }
-    
-    res.render('anonymous_message', { 
-        username: user.username
-    });
 });
 
 // Add POST route for sending anonymous messages
