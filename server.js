@@ -109,13 +109,11 @@ function isAuthenticated(req, res, next) {
 
 // Admin middleware
 function isAdmin(req, res, next) {
-    const adminUser = req.session.user && 
-                     req.session.user.username === process.env.ADMIN_USERNAME;
-    if (adminUser) {
+    if (req.session.user && req.session.user.isAdmin) {
         return next();
     }
-    res.status(403).render('error', { 
-        message: '沒有權限訪問此頁面',
+    res.status(403).render('error', {
+        message: '沒有管理員權限',
         error: {}
     });
 }
@@ -218,8 +216,13 @@ app.get('/logout', (req, res) => {
 app.get('/message_box', isAuthenticated, async (req, res) => {
     try {
         const messages = await loadData(MESSAGES_FILE);
-        const userMessages = messages.filter(m => m.recipient_id === req.session.user.id)
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+        if (!Array.isArray(messages)) {
+            throw new Error('Invalid messages data');
+        }
+        
+        const userMessages = messages
+            .filter(m => m.recipient_id === req.session.user.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         
         res.render('message_box', { 
             messages: userMessages,
@@ -292,7 +295,7 @@ app.post('/l/:link', async (req, res) => {
     }
 });
 
-// Admin login
+// Admin routes
 app.get('/admin/login', (req, res) => {
     res.render('admin_login');
 });
@@ -301,45 +304,39 @@ app.post('/admin/login', async (req, res) => {
     const { username, password } = req.body;
     if (username === process.env.ADMIN_USERNAME && 
         password === process.env.ADMIN_PASSWORD) {
-        req.session.user = { 
+        req.session.user = {
             username: process.env.ADMIN_USERNAME,
             isAdmin: true
         };
-        res.redirect('/admin');
+        res.redirect('/admin/dashboard');
     } else {
         req.flash('error', '管理員帳號或密碼錯誤');
         res.redirect('/admin/login');
     }
 });
 
-// Admin panel
-app.get('/admin', isAdmin, async (req, res) => {
+app.get('/admin/dashboard', isAdmin, async (req, res) => {
     try {
         const users = await loadData(USERS_FILE);
         const messages = await loadData(MESSAGES_FILE);
         
-        res.render('admin', {
+        res.render('admin_dashboard', {
             users,
             messages,
             getUserName: (id) => {
                 const user = users.find(u => u.id === id);
                 return user ? user.username : '已刪除的使用者';
-            },
-            formatDate: (date) => {
-                return new Date(date).toLocaleString('zh-TW');
             }
         });
     } catch (err) {
-        console.error('Admin panel error:', err);
-        res.status(500).render('error', {
-            message: '載入管理員面板失敗',
-            error: process.env.NODE_ENV === 'development' ? err : {}
-        });
+        console.error('Admin dashboard error:', err);
+        req.flash('error', '載入資料失敗');
+        res.redirect('/admin/login');
     }
 });
 
-// Admin actions
-app.delete('/admin/user/:id', isAdmin, async (req, res) => {
+// Admin API endpoints
+app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         let users = await loadData(USERS_FILE);
@@ -354,11 +351,11 @@ app.delete('/admin/user/:id', isAdmin, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('Delete user error:', err);
-        res.json({ success: false });
+        res.status(500).json({ success: false });
     }
 });
 
-app.delete('/admin/message/:id', isAdmin, async (req, res) => {
+app.delete('/api/admin/messages/:id', isAdmin, async (req, res) => {
     try {
         const messageId = parseInt(req.params.id);
         let messages = await loadData(MESSAGES_FILE);
@@ -367,25 +364,39 @@ app.delete('/admin/message/:id', isAdmin, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('Delete message error:', err);
-        res.json({ success: false });
+        res.status(500).json({ success: false });
     }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(500).render('error', {
-        message: '發生錯誤，請稍後再試',
-        error: process.env.NODE_ENV === 'development' ? err : {}
-    });
+    if (req.xhr || req.headers.accept.includes('json')) {
+        // Handle AJAX/API errors
+        res.status(500).json({ 
+            error: '發生錯誤，請稍後再試'
+        });
+    } else {
+        // Handle regular page errors
+        res.status(500).render('error', {
+            message: '發生錯誤，請稍後再試',
+            error: {}
+        });
+    }
 });
 
 // 404 handler (must be after all routes)
 app.use((req, res) => {
-    res.status(404).render('error', {
-        message: '找不到頁面',
-        error: {}
-    });
+    if (req.xhr || req.headers.accept.includes('json')) {
+        res.status(404).json({ 
+            error: '找不到頁面'
+        });
+    } else {
+        res.status(404).render('error', {
+            message: '找不到頁面',
+            error: {}
+        });
+    }
 });
 
 // Initialize and start server
