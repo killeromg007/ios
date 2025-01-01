@@ -22,32 +22,46 @@ app.set("layout extractStyles", true);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Session configuration
 app.use(session({
     secret: process.env.SECRET_KEY || 'dev',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to true only if using HTTPS
         maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
     },
     store: new MemoryStore({
         checkPeriod: 86400000 // prune expired entries every 24h
     })
 }));
+
+// Flash messages
 app.use(flash());
 
-// Add this middleware to make flash messages and user available to all views
+// Make user and messages available to all views
 app.use((req, res, next) => {
-    if (req.session && req.session.user) {
-        res.locals.user = req.session.user;
-    }
+    res.locals.user = req.session.user || null;
+    res.locals.messages = {
+        error: req.flash('error'),
+        success: req.flash('success')
+    };
     next();
 });
 
-// Add error handling for session
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
+// Add this after other middleware and before routes
+app.use((req, res, next) => {
+    // Set default template variables
+    res.locals = {
+        user: req.session.user || null,
+        messages: {
+            error: req.flash('error') || [],
+            success: req.flash('success') || []
+        },
+        title: 'Anonymous Messages'
+    };
+    next();
 });
 
 // Data storage
@@ -95,11 +109,11 @@ function isAuthenticated(req, res, next) {
 
 // Routes
 app.get('/', (req, res) => {
-    res.render('index', { user: req.session.user });
+    res.render('index');
 });
 
 app.get('/register', (req, res) => {
-    res.render('register', { messages: req.flash() });
+    res.render('register');
 });
 
 app.post('/register', async (req, res) => {
@@ -135,7 +149,7 @@ app.post('/register', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.render('login', { messages: req.flash() });
+    res.render('login');
 });
 
 app.post('/login', async (req, res) => {
@@ -193,7 +207,6 @@ app.get('/message_box', isAuthenticated, async (req, res) => {
         const messages = await loadData(MESSAGES_FILE);
         const userMessages = messages.filter(m => m.recipient_id === req.session.user.id);
         res.render('message_box', { 
-            user: req.session.user,
             messages: userMessages,
             baseUrl: `${req.protocol}://${req.get('host')}`
         });
@@ -212,12 +225,34 @@ app.get('/l/:link', async (req, res) => {
         return res.redirect('/');
     }
     
-    res.render('anonymous_message', { username: user.username });
+    res.render('anonymous_message', { 
+        recipientUsername: user.username 
+    });
+});
+
+// Error handling middleware (add this at the end, before app.listen)
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render('error', {
+        message: '發生錯誤，請稍後再試',
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).render('error', {
+        message: '找不到頁面',
+        error: {}
+    });
 });
 
 // Initialize and start server
 initializeStorage().then(() => {
-app.listen(port, () => {
+    app.listen(port, () => {
         console.log(`Server running on port ${port}`);
     });
+}).catch(err => {
+    console.error('Failed to initialize storage:', err);
+    process.exit(1);
 }); 

@@ -1,0 +1,12 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <h1 class="display-4 mb-4">😢</h1>
+            <h2 class="mb-4"><%= message %></h2>
+            <% if (error.stack && process.env.NODE_ENV === 'development') { %>
+                <pre class="text-danger"><%= error.stack %></pre>
+            <% } %>
+            <a href="/" class="btn btn-primary">返回首頁</a>
+        </div>
+    </div>
+</div> 
