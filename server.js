@@ -368,6 +368,65 @@ app.delete('/api/admin/messages/:id', isAdmin, async (req, res) => {
     }
 });
 
+// Admin JSON editor endpoints
+app.get('/api/admin/json/:type', isAdmin, async (req, res) => {
+    try {
+        const type = req.params.type;
+        let data;
+        
+        switch (type) {
+            case 'users':
+                data = await loadData(USERS_FILE);
+                break;
+            case 'messages':
+                data = await loadData(MESSAGES_FILE);
+                break;
+            default:
+                return res.status(400).json({ error: '無效的檔案類型' });
+        }
+        
+        res.json(data);
+    } catch (err) {
+        console.error('Load JSON error:', err);
+        res.status(500).json({ error: '載入失敗' });
+    }
+});
+
+app.post('/api/admin/json/:type', isAdmin, async (req, res) => {
+    try {
+        const type = req.params.type;
+        const { content } = req.body;
+        
+        // Validate JSON
+        let data;
+        try {
+            data = JSON.parse(content);
+            if (!Array.isArray(data)) {
+                throw new Error('Data must be an array');
+            }
+        } catch (e) {
+            return res.status(400).json({ error: '無效的 JSON 格式' });
+        }
+        
+        // Save to appropriate file
+        switch (type) {
+            case 'users':
+                await saveData(USERS_FILE, data);
+                break;
+            case 'messages':
+                await saveData(MESSAGES_FILE, data);
+                break;
+            default:
+                return res.status(400).json({ error: '無效的檔案類型' });
+        }
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Save JSON error:', err);
+        res.status(500).json({ error: '儲存失敗' });
+    }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);

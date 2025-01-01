@@ -84,45 +84,135 @@
             </div>
         </div>
     </div>
+
+    <!-- JSON Editor Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">JSON 編輯器</h5>
+                    <div>
+                        <select class="form-select form-select-sm d-inline-block w-auto me-2" id="fileSelector">
+                            <option value="users">Users.json</option>
+                            <option value="messages">Messages.json</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="saveJson()">
+                            <i class="fas fa-save"></i> 儲存
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="jsonEditor" style="height: 400px; border: 1px solid #ccc;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Add Monaco Editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
 <script>
-function copyLink(link) {
-    const url = `${window.location.origin}/l/${link}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert('連結已複製！');
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
+    require(['vs/editor/editor.main'], function() {
+        window.editor = monaco.editor.create(document.getElementById('jsonEditor'), {
+            value: '',
+            language: 'json',
+            theme: 'vs-dark',
+            automaticLayout: true,
+            minimap: { enabled: false },
+            formatOnPaste: true,
+            formatOnType: true
+        });
+        
+        loadJson('users'); // Load Users.json by default
     });
-}
 
-function deleteUser(userId) {
-    if (confirm('確定要刪除此使用者嗎？相關訊息也會被刪除。')) {
-        fetch(`/api/admin/users/${userId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+    // Load JSON data
+    async function loadJson(type) {
+        try {
+            const response = await fetch(`/api/admin/json/${type}`);
+            const data = await response.json();
+            window.editor.setValue(JSON.stringify(data, null, 2));
+        } catch (err) {
+            alert('載入 JSON 失敗');
+            console.error(err);
+        }
+    }
+
+    // Save JSON data
+    async function saveJson() {
+        try {
+            const type = document.getElementById('fileSelector').value;
+            const content = window.editor.getValue();
+            
+            // Validate JSON
+            try {
+                JSON.parse(content);
+            } catch (e) {
+                alert('無效的 JSON 格式');
+                return;
+            }
+
+            const response = await fetch(`/api/admin/json/${type}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert('儲存成功');
                 location.reload();
             } else {
-                alert('刪除失敗');
+                alert('儲存失敗');
             }
-        });
+        } catch (err) {
+            alert('儲存失敗');
+            console.error(err);
+        }
     }
-}
 
-function deleteMessage(messageId) {
-    if (confirm('確定要刪除此訊息嗎？')) {
-        fetch(`/api/admin/messages/${messageId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('刪除失敗');
-            }
+    // Handle file selection change
+    document.getElementById('fileSelector').addEventListener('change', function(e) {
+        loadJson(e.target.value);
+    });
+
+    function copyLink(link) {
+        const url = `${window.location.origin}/l/${link}`;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('連結已複製！');
         });
     }
-}
+
+    function deleteUser(userId) {
+        if (confirm('確定要刪除此使用者嗎？相關訊息也會被刪除。')) {
+            fetch(`/api/admin/users/${userId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('刪除失敗');
+                }
+            });
+        }
+    }
+
+    function deleteMessage(messageId) {
+        if (confirm('確定要刪除此訊息嗎？')) {
+            fetch(`/api/admin/messages/${messageId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('刪除失敗');
+                }
+            });
+        }
+    }
 </script> 
