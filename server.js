@@ -59,7 +59,7 @@ app.use((req, res, next) => {
             error: req.flash('error') || [],
             success: req.flash('success') || []
         },
-        title: 'Anonymous Messages'
+        title: '匿名留言'
     };
     next();
 });
@@ -205,13 +205,16 @@ app.get('/logout', (req, res) => {
 app.get('/message_box', isAuthenticated, async (req, res) => {
     try {
         const messages = await loadData(MESSAGES_FILE);
-        const userMessages = messages.filter(m => m.recipient_id === req.session.user.id);
+        const userMessages = messages.filter(m => m.recipient_id === req.session.user.id)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
+        
         res.render('message_box', { 
             messages: userMessages,
             baseUrl: `${req.protocol}://${req.get('host')}`
         });
     } catch (err) {
-        console.error(err);
+        console.error('Error loading messages:', err);
+        req.flash('error', '載入訊息失敗');
         res.redirect('/');
     }
 });
@@ -226,20 +229,59 @@ app.get('/l/:link', async (req, res) => {
     }
     
     res.render('anonymous_message', { 
-        recipientUsername: user.username 
+        username: user.username
     });
 });
 
-// Error handling middleware (add this at the end, before app.listen)
+// Add POST route for sending anonymous messages
+app.post('/l/:link', async (req, res) => {
+    try {
+        const { content } = req.body;
+        if (!content || content.trim() === '') {
+            req.flash('error', '請輸入訊息內容');
+            return res.redirect(`/l/${req.params.link}`);
+        }
+
+        const users = await loadData(USERS_FILE);
+        const recipient = users.find(u => u.link === req.params.link);
+        
+        if (!recipient) {
+            req.flash('error', '無效的連結');
+            return res.redirect('/');
+        }
+
+        const messages = await loadData(MESSAGES_FILE);
+        const newMessage = {
+            id: Date.now(), // Use timestamp as ID
+            content: content.trim(),
+            timestamp: new Date().toISOString(),
+            recipient_id: recipient.id,
+            is_anonymous: true,
+            created_at: new Date().toISOString()
+        };
+
+        messages.push(newMessage);
+        await saveData(MESSAGES_FILE, messages);
+
+        req.flash('success', '訊息已送出');
+        res.redirect(`/l/${req.params.link}`);
+    } catch (err) {
+        console.error('Error sending message:', err);
+        req.flash('error', '發送訊息失敗');
+        res.redirect(`/l/${req.params.link}`);
+    }
+});
+
+// Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error:', err);
     res.status(500).render('error', {
         message: '發生錯誤，請稍後再試',
         error: process.env.NODE_ENV === 'development' ? err : {}
     });
 });
 
-// 404 handler
+// 404 handler (must be after all routes)
 app.use((req, res) => {
     res.status(404).render('error', {
         message: '找不到頁面',
