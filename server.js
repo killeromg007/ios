@@ -7,6 +7,7 @@ const { nanoid } = require('nanoid');
 const fs = require('fs').promises;
 const path = require('path');
 const expressLayouts = require('express-ejs-layouts');
+const MemoryStore = require('memorystore')(session);
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -25,15 +26,28 @@ app.use(session({
     secret: process.env.SECRET_KEY || 'dev',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+    },
+    store: new MemoryStore({
+        checkPeriod: 86400000 // prune expired entries every 24h
+    })
 }));
 app.use(flash());
 
 // Add this middleware to make flash messages and user available to all views
 app.use((req, res, next) => {
-    res.locals.user = req.session.user;
-    res.locals.messages = req.flash();
+    if (req.session && req.session.user) {
+        res.locals.user = req.session.user;
+    }
     next();
+});
+
+// Add error handling for session
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
 });
 
 // Data storage
@@ -127,19 +141,44 @@ app.get('/login', (req, res) => {
 app.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+        
+        if (!username || !password) {
+            req.flash('error', '請輸入使用者名稱和密碼');
+            return res.redirect('/login');
+        }
+
         const users = await loadData(USERS_FILE);
         const user = users.find(u => u.username === username);
         
-        if (user && await bcrypt.compare(password, user.password_hash)) {
-            req.session.user = user;
-            res.redirect('/message_box');
-        } else {
+        if (!user) {
             req.flash('error', '使用者名稱或密碼錯誤');
-            res.redirect('/login');
+            return res.redirect('/login');
         }
+
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        
+        if (!isValidPassword) {
+            req.flash('error', '使用者名稱或密碼錯誤');
+            return res.redirect('/login');
+        }
+
+        req.session.user = {
+            id: user.id,
+            username: user.username,
+            link: user.link
+        };
+        
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                req.flash('error', '登入失敗，請稍後再試');
+                return res.redirect('/login');
+            }
+            res.redirect('/message_box');
+        });
     } catch (err) {
-        console.error(err);
-        req.flash('error', '登入失敗');
+        console.error('Login error:', err);
+        req.flash('error', '登入失敗，請稍後再試');
         res.redirect('/login');
     }
 });
