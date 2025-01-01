@@ -1,0 +1,127 @@
+<div class="container">
+    <h2 class="mb-4">管理員面板</h2>
+    
+    <div class="row">
+        <!-- Users Table -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">使用者列表</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>使用者名稱</th>
+                                    <th>連結</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% users.forEach(function(user) { %>
+                                    <tr>
+                                        <td><%= user.id %></td>
+                                        <td><%= user.username %></td>
+                                        <td>
+                                            <small class="text-muted"><%= user.link %></small>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="copyLink('<%= user.link %>')">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteUser('<%= user.id %>')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Table -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">訊息列表</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>收件者</th>
+                                    <th>內容</th>
+                                    <th>時間</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% messages.forEach(function(message) { %>
+                                    <tr>
+                                        <td><%= getUserName(message.recipient_id) %></td>
+                                        <td><%= message.content %></td>
+                                        <td><small><%= formatDate(message.timestamp) %></small></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteMessage('<%= message.id %>')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyLink(link) {
+    const url = `${window.location.origin}/l/${link}`;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('連結已複製！');
+    });
+}
+
+function deleteUser(userId) {
+    if (confirm('確定要刪除此使用者嗎？相關訊息也會被刪除。')) {
+        fetch(`/admin/user/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('刪除失敗');
+            }
+        });
+    }
+}
+
+function deleteMessage(messageId) {
+    if (confirm('確定要刪除此訊息嗎？')) {
+        fetch(`/admin/message/${messageId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('刪除失敗');
+            }
+        });
+    }
+}
+</script> 

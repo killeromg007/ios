@@ -107,6 +107,19 @@ function isAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
+// Admin middleware
+function isAdmin(req, res, next) {
+    const adminUser = req.session.user && 
+                     req.session.user.username === process.env.ADMIN_USERNAME;
+    if (adminUser) {
+        return next();
+    }
+    res.status(403).render('error', { 
+        message: '沒有權限訪問此頁面',
+        error: {}
+    });
+}
+
 // Routes
 app.get('/', (req, res) => {
     res.render('index');
@@ -276,6 +289,85 @@ app.post('/l/:link', async (req, res) => {
         console.error('Error sending message:', err);
         req.flash('error', '發送訊息失敗');
         res.redirect(`/l/${req.params.link}`);
+    }
+});
+
+// Admin login
+app.get('/admin/login', (req, res) => {
+    res.render('admin_login');
+});
+
+app.post('/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (username === process.env.ADMIN_USERNAME && 
+        password === process.env.ADMIN_PASSWORD) {
+        req.session.user = { 
+            username: process.env.ADMIN_USERNAME,
+            isAdmin: true
+        };
+        res.redirect('/admin');
+    } else {
+        req.flash('error', '管理員帳號或密碼錯誤');
+        res.redirect('/admin/login');
+    }
+});
+
+// Admin panel
+app.get('/admin', isAdmin, async (req, res) => {
+    try {
+        const users = await loadData(USERS_FILE);
+        const messages = await loadData(MESSAGES_FILE);
+        
+        res.render('admin', {
+            users,
+            messages,
+            getUserName: (id) => {
+                const user = users.find(u => u.id === id);
+                return user ? user.username : '已刪除的使用者';
+            },
+            formatDate: (date) => {
+                return new Date(date).toLocaleString('zh-TW');
+            }
+        });
+    } catch (err) {
+        console.error('Admin panel error:', err);
+        res.status(500).render('error', {
+            message: '載入管理員面板失敗',
+            error: process.env.NODE_ENV === 'development' ? err : {}
+        });
+    }
+});
+
+// Admin actions
+app.delete('/admin/user/:id', isAdmin, async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        let users = await loadData(USERS_FILE);
+        let messages = await loadData(MESSAGES_FILE);
+        
+        users = users.filter(u => u.id !== userId);
+        messages = messages.filter(m => m.recipient_id !== userId);
+        
+        await saveData(USERS_FILE, users);
+        await saveData(MESSAGES_FILE, messages);
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete user error:', err);
+        res.json({ success: false });
+    }
+});
+
+app.delete('/admin/message/:id', isAdmin, async (req, res) => {
+    try {
+        const messageId = parseInt(req.params.id);
+        let messages = await loadData(MESSAGES_FILE);
+        messages = messages.filter(m => m.id !== messageId);
+        await saveData(MESSAGES_FILE, messages);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete message error:', err);
+        res.json({ success: false });
     }
 });
 
