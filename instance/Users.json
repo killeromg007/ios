@@ -1,8 +1,14 @@
 [
-    {
-        "id": 1,
-        "username": "a",
-        "password_hash": "scrypt:32768:8:1$XjxJadwsRTIIjFe0$bb0345efa1a36d8c252cd3af730f74eb70dbb9a07822a20de0caf5c0a455361dbc117e58444c86a7a80313157318301e2fe1455f7bae299a94aa72db2a41f41c",
-        "link": "2LZvFpvb83"
-    }
+  {
+    "id": 1,
+    "username": "a",
+    "password_hash": "scrypt:32768:8:1$XjxJadwsRTIIjFe0$bb0345efa1a36d8c252cd3af730f74eb70dbb9a07822a20de0caf5c0a455361dbc117e58444c86a7a80313157318301e2fe1455f7bae299a94aa72db2a41f41c",
+    "link": "2LZvFpvb83"
+  },
+  {
+    "id": 2,
+    "username": "s",
+    "password_hash": "$2a$10$M2cHsO7WaDM67BP7.eTFbea.wWobYuAH5Pidi4zGone5s6INvZteS",
+    "link": "mgZxJhTQA_"
+  }
 ]

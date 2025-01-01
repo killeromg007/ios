@@ -4,43 +4,46 @@ A web application that allows users to send and receive anonymous messages.
 
 ## Features
 - User registration and authentication
-- Google OAuth login
 - Anonymous message boxes
-- Modern UI designa
+- Modern UI design
 
 ## Local Development
 1. Install dependencies:
 ```bash
+# Install Python dependencies
 pip install -r requirements.txt
+
+# Install Node.js dependencies
+npm install
 ```
 
 2. Set up environment variables in `.env`:
 ```
 SECRET_KEY=[your-secret-key]
-GOOGLE_OAUTH_CLIENT_ID=[your-google-client-id]
-GOOGLE_OAUTH_CLIENT_SECRET=[your-google-client-secret]
-DATABASE_URL=postgresql://anonymous-messages_owner:pmK9yrPWa5wt@ep-still-shadow-a19fqc9l.ap-southeast-1.aws.neon.tech/anonymous-messages?sslmode=require
+DATABASE_URL=[your-database-url]
 ```
 
 3. Run the application:
 ```bash
-flask run
+# Start the Node.js server (which will start Flask)
+npm start
 ```
 
-## Deployment (Cloudflare Pages)
+## Deployment (Render)
 
 1. Push your code to GitHub
 
-2. In Cloudflare Pages:
+2. In Render:
    - Connect your repository
-   - Set build command: `pip install -r requirements.txt`
-   - Set build output directory: `build`
+   - Environment: Node.js
+   - Build Command: `npm install && pip install -r requirements.txt`
+   - Start Command: `npm start`
    - Add environment variables:
      ```
      SECRET_KEY=[your-secret-key]
-     GOOGLE_OAUTH_CLIENT_ID=[your-google-client-id]
-     GOOGLE_OAUTH_CLIENT_SECRET=[your-google-client-secret]
      DATABASE_URL=[your-database-url]
+     HOST=0.0.0.0
+     PORT=8080
      ```
 
 3. Deploy!

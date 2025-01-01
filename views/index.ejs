@@ -1,0 +1,10 @@
+<div class="text-center mt-5">
+    <h1>Welcome to Anonymous Messages</h1>
+    <p class="lead">Share your thoughts anonymously</p>
+    <% if (!user) { %>
+        <div class="mt-4">
+            <a href="/register" class="btn btn-primary me-2">Register</a>
+            <a href="/login" class="btn btn-outline-primary">Login</a>
+        </div>
+    <% } %>
+</div> 
